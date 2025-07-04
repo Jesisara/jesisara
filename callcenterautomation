@@ -1,0 +1,66 @@
+import openai
+import os
+from pydub import AudioSegment
+# Set up OpenAI API key
+openai.api_key = "YOUR_OPENAI_API_KEY"
+
+# Function to convert audio to text using OpenAI Whisper API
+def transcribe_audio(file_path):
+    try:
+        # Load and preprocess the audio file
+        audio = AudioSegment.from_file(file_path)
+        audio.export("temp.wav", format="wav")  # Export to WAV format
+
+        # Open the audio file
+        with open("temp.wav", "rb") as audio_file:
+            # Transcribe audio using Whisper API
+            response = openai.Audio.transcribe("whisper-1", audio_file)
+            return response["text"]
+    except Exception as e:
+        print("Error in transcription:", str(e))
+        return None
+
+# Function to determine customer intent based on transcribed text
+def analyze_intent(transcribed_text):
+    if "order" in transcribed_text.lower():
+        return "Order Inquiry"
+    elif "complaint" in transcribed_text.lower():
+        return "Customer Complaint"
+    elif "support" in transcribed_text.lower():
+        return "Technical Support"
+    else:
+        return "General Inquiry"
+
+# Function to generate a response based on intent
+def generate_response(intent):
+    responses = {
+        "Order Inquiry": "I see you have questions about your order. Can you provide the order number?",
+        "Customer Complaint": "I'm sorry to hear about your experience. Could you please provide more details?",
+        "Technical Support": "Let me connect you with our technical support team.",
+        "General Inquiry": "How can I assist you today?"
+    }
+    return responses.get(intent, "How can I help you?")
+
+# Main function to handle the automation workflow
+def handle_call(file_path):
+    print("Starting call handling...")
+    
+    # Step 1: Transcribe audio
+    transcribed_text = transcribe_audio(file_path)
+    if transcribed_text:
+        print("Transcription:", transcribed_text)
+
+        # Step 2: Analyze intent
+        intent = analyze_intent(transcribed_text)
+        print("Detected Intent:", intent)
+
+        # Step 3: Generate response
+        response = generate_response(intent)
+        print("Response:", response)
+    else:
+        print("Failed to transcribe audio.")
+
+if __name__ == "__main__":
+    # Test with an example audio file
+    sample_audio = "audio/sample_call.mp3"  # Replace with actual file path
+    handle_call(sample_audio)
